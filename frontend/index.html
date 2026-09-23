@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abingdon School Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,480;9..144,560;9..144,620&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ============= LOGIN ============= -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-crest">A</div>
+    <h1>Abingdon School Library</h1>
+    <div class="sub">Sign in to your account</div>
+    <form id="passwordForm" onsubmit="return handlePasswordLogin(event)">
+      <div class="field"><label for="loginEmail">School email</label><input type="text" id="loginEmail" placeholder="name@abingdon.org.uk" required></div>
+      <div class="field"><label for="loginPass">Password</label><input type="password" id="loginPass" placeholder="••••••••" required></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Sign in</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+
+    <div class="divider">or continue with</div>
+    <button class="oauth-btn" onclick="handleGoogleLogin()">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 35.5 24 35.5c-6.4 0-11.6-5.2-11.6-11.6S17.6 12.3 24 12.3c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.6 6.1 29 4.2 24 4.2 12.9 4.2 4 13.1 4 24.2s8.9 20 20 20c11.5 0 19.1-8.1 19.1-19.5 0-1.4-.2-2.6-.5-4.2z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.8 18.9 12.3 24 12.3c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.6 6.1 29 4.2 24 4.2c-7.6 0-14.1 4.3-17.4 10.5z"/><path fill="#4CAF50" d="M24 44.2c5 0 9.5-1.9 13-5l-6-5c-2 1.5-4.5 2.4-7 2.4-5.3 0-9.7-3-11.4-7.2l-6.5 5C9.9 39.9 16.4 44.2 24 44.2z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l6 5c-.4.4 6.9-5 6.9-14.4 0-1.4-.2-2.6-.5-4.2z"/></svg>
+      Continue with Google
+    </button>
+    <button class="oauth-btn" onclick="handlePasskeyLogin()">
+      <span style="font-size:15px;">🔐</span> Sign in with a passkey
+    </button>
+    <div style="font-size:11.5px;color:var(--color-text-3);margin-top:4px;">Passkeys (Face ID, Touch ID, Windows Hello) can be set up from Profile → Security once you're signed in.</div>
+  </div>
+</div>
+
+<!-- ============= APP ============= -->
+<div id="app">
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="wordmark"><span class="crest">A</span> Abingdon Library</div>
+      <div class="nav-links" id="studentNavLinks">
+        <a href="#" class="active" onclick="showStudentTab('home',this)">Home</a>
+        <a href="#" onclick="showStudentTab('catalogue',this)">Catalogue</a>
+        <a href="#" onclick="showStudentTab('mylibrary',this)">My Library</a>
+        <a href="#" onclick="showStudentTab('lists',this)">Reading Lists</a>
+      </div>
+      <div class="nav-links hidden" id="staffNavLinks">
+        <a href="#" class="active" onclick="showStaffTab('dashboard',this)">Dashboard</a>
+        <a href="#" onclick="showStaffTab('checkout',this)">Bulk Class Checkout</a>
+        <a href="#" onclick="showStaffTab('reading',this)">What My Classes Are Reading</a>
+        <a href="#" onclick="showStaffTab('lists',this)">Class Reading Lists</a>
+        <a href="#" onclick="showStaffTab('loans',this)">My Loans</a>
+        <a href="#" onclick="showStaffTab('request',this)">Request a Book</a>
+      </div>
+      <div class="nav-actions">
+        <span class="role-pill" id="rolePill">STUDENT</span>
+        <div class="avatar" id="avatarInitials">JT</div>
+        <button class="icon-btn" onclick="logout()" title="Sign out">⏻</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- STAFF VIEW -->
+  <div id="staffView" class="container hidden">
+    <div id="staff-tab-dashboard"></div>
+    <div id="staff-tab-checkout" class="hidden"></div>
+    <div id="staff-tab-reading" class="hidden"></div>
+    <div id="staff-tab-lists" class="hidden"></div>
+    <div id="staff-tab-loans" class="hidden"></div>
+    <div id="staff-tab-request" class="hidden"></div>
+  </div>
+
+  <!-- STUDENT VIEW -->
+  <div id="studentView" class="container">
+    <div id="tab-home">
+      <section class="hero">
+        <h1 class="hero-greeting">Good afternoon, James.</h1>
+        <p class="hero-sub">What would you like to read?</p>
+        <div class="hero-search">🔍 <input placeholder="Search books, authors, topics or ISBNs…"></div>
+      </section>
+      <div id="homeEmpty"></div>
+      <div id="homeRails"></div>
+    </div>
+
+    <div id="tab-catalogue" class="hidden">
+      <h2 style="font-family:var(--font-display);font-weight:560;margin:26px 0 4px;">Catalogue</h2>
+      <div id="catalogueEmpty"></div>
+      <div class="grid-books" id="catalogueGrid"></div>
+    </div>
+
+    <div id="tab-mylibrary" class="hidden">
+      <h2 style="font-family:var(--font-display);font-weight:560;margin:26px 0 14px;">My Library</h2>
+      <div class="tabbar">
+        <div class="tab active" onclick="setMyLibTab('loans',this)">Currently Borrowed</div>
+        <div class="tab" onclick="setMyLibTab('reservations',this)">Reservations</div>
+        <div class="tab" onclick="setMyLibTab('favourites',this)">Favourites</div>
+      </div>
+      <div id="mylibContent"></div>
+    </div>
+
+    <div id="tab-lists" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:26px 0 14px;">
+        <h2 style="font-family:var(--font-display);font-weight:560;margin:0;">Reading Lists</h2>
+        <button class="btn btn-primary" onclick="createReadingList()">+ New list</button>
+      </div>
+      <div id="listsContent"></div>
+    </div>
+  </div>
+
+  <!-- LIBRARIAN / HEAD OF LIBRARY VIEW -->
+  <div id="librarianView" class="hidden">
+    <div class="admin-sidebar" id="adminSidebar"></div>
+    <div class="admin-main" id="adminMain"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- One-time welcome / change-password modal -->
+<div class="modal-backdrop" id="welcomeBackdrop">
+  <div class="modal" id="welcomeModal" style="max-width:420px;position:relative;"></div>
+</div>
+
+<script src="js/app.js" defer></script>
+</body>
+</html>

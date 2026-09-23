@@ -1,0 +1,302 @@
+// Abingdon School Library — Prisma schema (PostgreSQL)
+// A `Book` is a title. A `BookCopy` is one physical item of that title, with its own barcode
+// and status. Loans are always issued against a specific copy, never against a title directly.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  student
+  staff
+  librarian
+  head_of_library
+  admin
+}
+
+enum AuthProvider {
+  password
+  google
+}
+
+enum CopyStatus {
+  available
+  on_loan
+  reserved
+  lost
+  damaged
+  repair
+  withdrawn
+}
+
+enum LoanStatus {
+  active
+  returned
+  overdue
+}
+
+enum ReservationStatus {
+  queued
+  ready
+  fulfilled
+  cancelled
+  expired
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+  flagged
+  removed
+}
+
+enum PurchaseRequestStatus {
+  pending
+  approved
+  rejected
+  ordered
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  displayName     String
+  role            UserRole  @default(student)
+  authProvider    AuthProvider @default(password)
+  passwordHash    String?   // null for Google-only accounts
+  googleSub       String?   @unique
+  yearGroup       String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+
+  loans            Loan[]
+  reservations     Reservation[]
+  favourites       Favourite[]
+  readingLists     ReadingList[]
+  reviews          Review[]
+  classCheckouts   ClassCheckout[]
+  purchaseRequests PurchaseRequest[]
+  auditLogs        AuditLog[]
+  passkeys         Passkey[]
+
+  @@index([role])
+}
+
+// WebAuthn credentials — matches the real registration/authentication flow in auth.service.ts
+model Passkey {
+  id           String @id @default(uuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id])
+  credentialId String @unique
+  publicKey    Bytes
+  counter      Int    @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model Author {
+  id    String @id @default(uuid())
+  name  String
+  books BookAuthor[]
+}
+
+model BookAuthor {
+  bookId   String
+  authorId String
+  book     Book   @relation(fields: [bookId], references: [id])
+  author   Author @relation(fields: [authorId], references: [id])
+  @@id([bookId, authorId])
+}
+
+model Book {
+  id               String   @id @default(uuid())
+  isbn13           String?  @unique
+  isbn10           String?
+  title            String
+  subtitle         String?
+  description      String?  // untrusted external text — never fed to the AI as instructions
+  publisher        String?
+  publicationDate  DateTime?
+  coverUrl         String?
+  coverIsFallback  Boolean  @default(false)
+  genre            String?
+  ageRange         String?
+  isStaffPick      Boolean  @default(false)
+  isHidden         Boolean  @default(false)
+  isRecoExcluded   Boolean  @default(false)
+  metadataSource   String?  // e.g. "open_library", "manual", "browns" — provenance
+  createdAt        DateTime @default(now())
+
+  authors      BookAuthor[]
+  copies       BookCopy[]
+  loans        Loan[]
+  reservations Reservation[]
+  favourites   Favourite[]
+  reviews      Review[]
+  listItems    ReadingListItem[]
+  checkouts    ClassCheckout[]
+
+  @@index([title])
+  @@index([isbn13])
+}
+
+model BookCopy {
+  id           String     @id @default(uuid())
+  bookId       String
+  book         Book       @relation(fields: [bookId], references: [id])
+  barcode      String     @unique // the physical sticker on this copy — what gets scanned
+  status       CopyStatus @default(available)
+  location     String?    // e.g. "Main Library · Fiction · Shelf F-12"
+  referenceOnly Boolean   @default(false)
+  createdAt    DateTime   @default(now())
+
+  loans Loan[]
+
+  @@index([bookId])
+  @@index([status])
+}
+
+model Loan {
+  id          String     @id @default(uuid())
+  copyId      String
+  copy        BookCopy   @relation(fields: [copyId], references: [id])
+  bookId      String
+  book        Book       @relation(fields: [bookId], references: [id])
+  borrowerId  String
+  borrower    User       @relation(fields: [borrowerId], references: [id])
+  issuedById  String     // the librarian/HoL who issued it — loans are never self-service
+  borrowedAt  DateTime   @default(now())
+  dueAt       DateTime
+  returnedAt  DateTime?
+  status      LoanStatus @default(active)
+
+  @@index([borrowerId])
+  @@index([status])
+}
+
+model Reservation {
+  id        String            @id @default(uuid())
+  bookId    String
+  book      Book              @relation(fields: [bookId], references: [id])
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  status    ReservationStatus @default(queued)
+  queuedAt  DateTime          @default(now())
+  readyAt   DateTime?
+  expiresAt DateTime?
+
+  @@index([bookId, status])
+  @@index([userId])
+}
+
+model Favourite {
+  userId    String
+  bookId    String
+  user      User   @relation(fields: [userId], references: [id])
+  book      Book   @relation(fields: [bookId], references: [id])
+  createdAt DateTime @default(now())
+  @@id([userId, bookId])
+}
+
+model ReadingList {
+  id          String   @id @default(uuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  title       String
+  description String?
+  visibility  String   @default("private") // private | class | school | staff_only
+  audience    String?
+  createdAt   DateTime @default(now())
+
+  items ReadingListItem[]
+}
+
+model ReadingListItem {
+  readingListId String
+  bookId        String
+  readingList   ReadingList @relation(fields: [readingListId], references: [id])
+  book          Book        @relation(fields: [bookId], references: [id])
+  position      Int         @default(0)
+  @@id([readingListId, bookId])
+}
+
+model Review {
+  id           String       @id @default(uuid())
+  bookId       String
+  book         Book         @relation(fields: [bookId], references: [id])
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  rating       Int?
+  body         String?
+  status       ReviewStatus @default(pending)
+  moderatedById String?
+  moderatedAt  DateTime?
+  createdAt    DateTime     @default(now())
+}
+
+model ClassCheckout {
+  id         String   @id @default(uuid())
+  className  String
+  bookId     String
+  book       Book     @relation(fields: [bookId], references: [id])
+  issuedById String
+  issuedBy   User     @relation(fields: [issuedById], references: [id])
+  createdAt  DateTime @default(now())
+
+  students ClassCheckoutStudent[]
+}
+
+// Names only — these are not full User accounts; a class list a teacher pastes in.
+model ClassCheckoutStudent {
+  id              String        @id @default(uuid())
+  classCheckoutId String
+  classCheckout   ClassCheckout @relation(fields: [classCheckoutId], references: [id])
+  studentName     String
+}
+
+model PurchaseRequest {
+  id        String                 @id @default(uuid())
+  title     String
+  author    String?
+  reason    String?
+  requestedById String
+  requestedBy   User               @relation(fields: [requestedById], references: [id])
+  status    PurchaseRequestStatus  @default(pending)
+  createdAt DateTime               @default(now())
+}
+
+model Recommendation {
+  id        String   @id @default(uuid())
+  userId    String
+  bookId    String
+  reason    String   // content_based | collaborative | editorial | trending | contextual | ai_assisted
+  score     Float
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,51 @@
+/* Liquid Glass button — pairs with liquid-glass-button.js. Uses the tokens already defined
+   in the main stylesheet (--color-primary, --color-steel, etc.) rather than shadcn defaults.
+   Respects prefers-reduced-motion and provides a solid fallback if backdrop-filter is
+   unsupported, per the accessibility requirements in architecture.md §29. */
+.btn-liquid-glass {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: none;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #1A1A1A);
+  cursor: pointer;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 1px 2px rgba(26,26,26,.08), 0 6px 16px rgba(26,26,26,.06);
+  transition: transform .2s cubic-bezier(.2,.7,.3,1), box-shadow .2s;
+  overflow: hidden;
+}
+.btn-liquid-glass:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(26,26,26,.08), 0 14px 28px rgba(230,64,151,.14); }
+.btn-liquid-glass:active { transform: translateY(0) scale(.98); }
+
+/* The glass layer only appears once JS has confirmed the filter defs exist, and only where
+   backdrop-filter is actually supported — otherwise this stays a plain solid button. */
+@supports (backdrop-filter: blur(4px)) {
+  .btn-liquid-glass.liquid-glass-ready {
+    background: color-mix(in srgb, var(--color-primary, #E64097) 12%, var(--color-surface, #fff) 88%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .btn-liquid-glass.liquid-glass-ready::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    filter: url(#abingdon-liquid-glass);
+    background: rgba(255,255,255,0.35);
+    pointer-events: none;
+  }
+  .btn-liquid-glass.liquid-glass-ready > * { position: relative; z-index: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-liquid-glass { transition: none; }
+}
