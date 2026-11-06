@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/BUILT%20WITH-TypeScript-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/PLATFORM-WEB-black?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Web Platform" />
   <img src="https://img.shields.io/badge/LICENSE-Proprietary-lightgrey?style=for-the-badge" 
-    [![Netlify Status](https://api.netlify.com/api/v1/badges/26825ba9-96cb-4684-b338-344c9b4d942e/deploy-status)](https://app.netlify.com/projects/hookeabi/deploys)
+  ?branch=  [![Netlify Status](https://api.netlify.com/api/v1/badges/26825ba9-96cb-4684-b338-344c9b4d942e/deploy-status)](https://app.netlify.com/projects/hookeabi/deploys)
   alt="License" />
 </p>
 
